@@ -13,10 +13,10 @@ export const Footer: React.FC = () => {
                 <img
                   src="https://cdn.builder.io/api/v1/image/assets/9de6021644f9415b8e6ba1d1ef4607ce/e4bfb5a3f9037dab7d49b7c2771e5de52593d8aa?placeholderIfAbsent=true"
                   className="aspect-[1] object-contain w-10 shrink-0"
-                  alt="Webfluin Logo"
+                  alt="FlowApp Logo"
                 />
                 <div className="text-white">
-                  Webfluin
+                  FlowApp
                 </div>
               </div>
               <div className="w-full max-w-[352px] opacity-80 text-[#AAA] text-lg font-normal leading-[30.6px] max-md:text-base max-md:leading-[24px]">
@@ -64,7 +64,7 @@ export const Footer: React.FC = () => {
         </div>
         <div className="w-full max-w-[1200px] py-3 border-t border-white/15 justify-center items-center flex max-md:text-center">
           <div className="opacity-80 text-[#AAA] text-base font-normal leading-[27.2px] max-md:text-sm">
-            Copyright © 2024 Webfluin. All Rights Reserved
+            Copyright © 2024 FlowApp. All Rights Reserved
           </div>
         </div>
       </div>
