@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -32,7 +32,6 @@ const useAuth = () => {
 };
 
 const EmployeePortalLayout: React.FC = () => {
-  const location = useLocation();
   const { isAdmin } = useAuth();
 
   return (
@@ -50,28 +49,27 @@ const EmployeePortalLayout: React.FC = () => {
           </Link>
         </div>
         <nav className="p-4 space-y-2">
-          {navItems.map((item) => {
-            // Conditionally render admin-only items
-            if (item.adminOnly && !isAdmin) {
-              return null;
-            }
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-gradient-to-r from-[#FF5552] to-[#F62623] text-white'
-                    : 'hover:bg-white/10 text-gray-300'
-                }`}
-              >
-                <Icon size={20} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+          {navItems
+            .filter((item) => !item.adminOnly || isAdmin)
+            .map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-gradient-to-r from-[#FF5552] to-[#F62623] text-white'
+                        : 'hover:bg-white/10 text-gray-300'
+                    }`
+                  }
+                >
+                  <Icon size={20} />
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            })}
         </nav>
       </aside>
 

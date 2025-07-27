@@ -1,0 +1,10 @@
+Executive - Chief Executive Officer, Chief Operating Officer, Chief Financial Officer
+Sales Department - Distribution, Order Fulfillment, Customer Sales, Sales Operations, Marketplace Team, Retail & Partnerships, Client Relations
+Production Department - Production Floor, Print Shop, Fabrication, Manufacturing, Print Operations, Makers Unit, Workshop Employee
+IT/Infrastructure Department - Information Technology Employee, IT & Systems Admin, Network operations, Infrastructure Team, Systems Administration/Information Technology Manager, Digital operations
+Design & Development - Design Studio, Product Development, Prototyping Lab, CAD LAB, Creative Team, Innovation Lab
+Quality & Support Team - Quality Assurance Manager, Finishing & Inspection, Post-Processing, Customer Support Technician, Returns & Repairs
+Logistics & Shipping Department - Logistics Coordinator, Shipping Specialist, Warehouse Manager
+Procurement & materials Department - Procurement Specialist, Materials, Manager, Inventory Control
+Finance & Accounting Department - Financial analyst, Accounting Specialist, Budget Manager
+Marketing Department - Marketing Specialist, Content Creator, Digital Marketing Manager
