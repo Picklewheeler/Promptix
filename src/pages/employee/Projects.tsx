@@ -1,319 +1,505 @@
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
-import { 
-  Calendar,
-  DollarSign,
-  Users,
-  Clock,
-  Briefcase
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { ProjectTable, ProjectData } from '@/components/tables/ProjectTable'
+import { StatusType } from '@/components/ui/status-badge'
+import { PriorityType } from '@/components/ui/priority-badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Plus, Search, Filter, Calendar as CalendarIcon, Briefcase, DollarSign, Users, TrendingUp } from 'lucide-react'
+import { format } from 'date-fns'
+import { useToast } from '@/hooks/use-toast'
 
-// Mock user role - In production, this would come from your authentication system
-const mockUserRole = 'executive'; // Options: 'executive', 'it_manager', 'systems_admin', 'employee'
+interface CreateProjectForm {
+  title: string
+  description: string
+  client: string
+  budget: string
+  due_date: Date | undefined
+  priority: PriorityType
+}
 
-const hasProjectManagementAccess = (role: string) => {
-  const allowedRoles = ['executive', 'it_manager', 'systems_admin'];
-  return allowedRoles.includes(role);
-};
-
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  client: string;
-  budget: number;
-  dueDate: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
-  assignedTo: string[];
-  priority: 'high' | 'medium' | 'low';
-};
-
-const Projects: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: '1',
-      title: 'Custom Phone Cases Batch',
-      description: 'Design and produce custom phone cases for TechCorp',
-      client: 'TechCorp',
-      budget: 2500,
-      dueDate: '2024-02-15',
-      status: 'In Progress',
-      assignedTo: ['john.doe', 'jane.smith'],
-      priority: 'medium'
-    },
-    {
-      id: '2',
-      title: 'Architectural Model Series',
-      description: '3D printing architectural models for client presentation',
-      client: 'ArchStudio',
-      budget: 8000,
-      dueDate: '2024-03-01',
-      status: 'In Progress',
-      assignedTo: ['mike.wilson'],
-      priority: 'high'
-    },
-    {
-      id: '3',
-      title: 'Medical Device Prototypes',
-      description: 'Prototype development for medical devices',
-      client: 'MedTech Inc',
-      budget: 12000,
-      dueDate: '2024-01-20',
-      status: 'Completed',
-      assignedTo: ['sarah.jones', 'alex.brown'],
-      priority: 'high'
-    }
-  ]);
-
-  const [newProject, setNewProject] = useState({
+const Projects = () => {
+  const { profile, isAdmin } = useAuth()
+  const { toast } = useToast()
+  const [projects, setProjects] = useState<ProjectData[]>([])
+  const [users, setUsers] = useState<Array<{ id: string; full_name: string; avatar_url?: string }>>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | StatusType>('all')
+  const [priorityFilter, setPriorityFilter] = useState<'all' | PriorityType>('all')
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [createForm, setCreateForm] = useState<CreateProjectForm>({
     title: '',
     description: '',
     client: '',
     budget: '',
-    dueDate: '',
-    assignedTo: '',
-    priority: 'medium' as 'high' | 'medium' | 'low',
-  });
+    due_date: undefined,
+    priority: 'medium'
+  })
 
-  const handleAddProject = () => {
-    if (!hasProjectManagementAccess(mockUserRole)) return;
-
-    const project: Project = {
-      id: Date.now().toString(),
-      ...newProject,
-      budget: Number(newProject.budget),
-      status: 'Pending',
-      assignedTo: newProject.assignedTo.split(',').map(s => s.trim()),
-    };
-    setProjects([...projects, project]);
-    setNewProject({
-      title: '',
-      description: '',
-      client: '',
-      budget: '',
-      dueDate: '',
-      assignedTo: '',
-      priority: 'medium',
-    });
-  };
-
-  const handleUpdateStatus = (projectId: string, newStatus: Project['status']) => {
-    setProjects(projects.map(project => 
-      project.id === projectId ? { ...project, status: newStatus } : project
-    ));
-  };
-
-  const handleDeleteProject = (projectId: string) => {
-    if (hasProjectManagementAccess(mockUserRole)) {
-      setProjects(projects.filter(project => project.id !== projectId));
+  // Fetch projects and users
+  useEffect(() => {
+    fetchProjects()
+    if (isAdmin) {
+      fetchUsers()
     }
-  };
+  }, [isAdmin, profile])
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-500/20 text-red-500';
-      case 'medium':
-        return 'bg-yellow-500/20 text-yellow-500';
-      case 'low':
-        return 'bg-green-500/20 text-green-500';
-      default:
-        return 'bg-gray-500/20 text-gray-500';
-    }
-  };
+  const fetchProjects = async () => {
+    try {
+      setLoading(true)
+      let query = supabase
+        .from('projects')
+        .select(`
+          *,
+          created_by:users!projects_created_by_fkey(id, full_name, avatar_url),
+          project_members(user_id, users(id, full_name, avatar_url))
+        `)
+        .order('created_at', { ascending: false })
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed':
-        return 'bg-green-500/20 text-green-500';
-      case 'In Progress':
-        return 'bg-blue-500/20 text-blue-500';
-      case 'Pending':
-        return 'bg-yellow-500/20 text-yellow-500';
-      default:
-        return 'bg-gray-500/20 text-gray-500';
+      // If not admin, only show projects where user is a member
+      if (!isAdmin && profile) {
+        query = query.eq('project_members.user_id', profile.id)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      const transformedProjects: ProjectData[] = data?.map(project => ({
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        client: project.client,
+        budget: project.budget,
+        spent: project.spent,
+        due_date: project.due_date,
+        priority: project.priority as PriorityType,
+        status: project.status as StatusType,
+        members: project.project_members?.map((pm: any) => pm.users) || [],
+        created_by: project.created_by,
+        department: project.department_id
+      })) || []
+
+      setProjects(transformedProjects)
+    } catch (error) {
+      console.error('Error fetching projects:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch projects',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoading(false)
     }
-  };
+  }
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, full_name, avatar_url')
+        .eq('is_active', true)
+        .order('full_name')
+
+      if (error) throw error
+      setUsers(data || [])
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  const handleCreateProject = async () => {
+    if (!createForm.title || !createForm.client || !createForm.budget || !createForm.due_date) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    try {
+      const budgetNumber = parseFloat(createForm.budget)
+      if (isNaN(budgetNumber) || budgetNumber <= 0) {
+        toast({
+          title: 'Error',
+          description: 'Please enter a valid budget amount',
+          variant: 'destructive'
+        })
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          title: createForm.title,
+          description: createForm.description,
+          client: createForm.client,
+          budget: budgetNumber,
+          spent: 0,
+          due_date: format(createForm.due_date, 'yyyy-MM-dd'),
+          priority: createForm.priority,
+          created_by: profile?.id,
+          status: 'Pending'
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Add creator as a project member
+      if (data && profile) {
+        const { error: memberError } = await supabase
+          .from('project_members')
+          .insert({
+            project_id: data.id,
+            user_id: profile.id
+          })
+
+        if (memberError) {
+          console.error('Error adding project member:', memberError)
+          toast({
+            title: 'Warning',
+            description: 'Project created but you may not have access. Please contact an administrator.',
+            variant: 'destructive'
+          })
+        }
+      }
+      toast({
+        title: 'Success',
+        description: 'Project created successfully'
+      })
+
+      setShowCreateDialog(false)
+      setCreateForm({
+        title: '',
+        description: '',
+        client: '',
+        budget: '',
+        due_date: undefined,
+        priority: 'medium'
+      })
+      fetchProjects()
+    } catch (error) {
+      console.error('Error creating project:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create project',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleStatusChange = async (project: ProjectData, status: StatusType) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ status })
+        .eq('id', project.id)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Project status updated'
+      })
+
+      fetchProjects()
+    } catch (error) {
+      console.error('Error updating project status:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update project status',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleDeleteProject = async (project: ProjectData) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', project.id)
+
+      if (error) throw error
+
+      toast({
+        title: 'Success',
+        description: 'Project deleted successfully'
+      })
+
+      fetchProjects()
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to delete project',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  // Filter projects based on search and filters
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || project.status === statusFilter
+    const matchesPriority = priorityFilter === 'all' || project.priority === priorityFilter
+    
+    return matchesSearch && matchesStatus && matchesPriority
+  })
+
+  // Project statistics
+  const projectStats = {
+    total: projects.length,
+    pending: projects.filter(p => p.status === 'Pending').length,
+    inProgress: projects.filter(p => p.status === 'In Progress').length,
+    completed: projects.filter(p => p.status === 'Completed').length,
+    totalBudget: projects.reduce((sum, p) => sum + p.budget, 0),
+    totalSpent: projects.reduce((sum, p) => sum + p.spent, 0)
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount)
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold mb-8">Project Management</h1>
-
-      {/* New Project Form - Only visible to authorized roles */}
-      {hasProjectManagementAccess(mockUserRole) && (
-        <Card className="p-6 bg-[rgba(33,33,43,0.95)] backdrop-blur-md border-white/10">
-          <h2 className="text-xl font-semibold mb-6">Add New Project</h2>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-1">Project Name</label>
-                <Input
-                  value={newProject.title}
-                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                  placeholder="Enter project name"
-                  className="bg-[rgba(255,255,255,0.05)] border-white/10 text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-1">Client</label>
-                <Input
-                  value={newProject.client}
-                  onChange={(e) => setNewProject({ ...newProject, client: e.target.value })}
-                  placeholder="Enter client name"
-                  className="bg-[rgba(255,255,255,0.05)] border-white/10 text-white"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-1">Description</label>
-              <Textarea
-                value={newProject.description}
-                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                placeholder="Enter project description"
-                className="bg-[rgba(255,255,255,0.05)] border-white/10 text-white"
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-1">Budget ($)</label>
-                <Input
-                  type="number"
-                  value={newProject.budget}
-                  onChange={(e) => setNewProject({ ...newProject, budget: e.target.value })}
-                  placeholder="Enter budget amount"
-                  className="bg-[rgba(255,255,255,0.05)] border-white/10 text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-1">Due Date</label>
-                <Input
-                  type="date"
-                  value={newProject.dueDate}
-                  onChange={(e) => setNewProject({ ...newProject, dueDate: e.target.value })}
-                  className="bg-[rgba(255,255,255,0.05)] border-white/10 text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-1">Priority</label>
-                <Select
-                  value={newProject.priority}
-                  onValueChange={(value: 'high' | 'medium' | 'low') => 
-                    setNewProject({ ...newProject, priority: value })
-                  }
-                >
-                  <SelectTrigger className="bg-[rgba(255,255,255,0.05)] border-white/10 text-white">
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high">High Priority</SelectItem>
-                    <SelectItem value="medium">Medium Priority</SelectItem>
-                    <SelectItem value="low">Low Priority</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-1">Assign To (comma-separated usernames)</label>
-              <Input
-                value={newProject.assignedTo}
-                onChange={(e) => setNewProject({ ...newProject, assignedTo: e.target.value })}
-                placeholder="E.g., john.doe, jane.smith"
-                className="bg-[rgba(255,255,255,0.05)] border-white/10 text-white"
-              />
-            </div>
-            <Button
-              onClick={handleAddProject}
-              className="bg-gradient-to-r from-[#FF5552] to-[#F62623] hover:opacity-90 text-white"
-            >
-              Add Project
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* Project Tracking */}
-      <Card className="p-6 bg-[rgba(33,33,43,0.95)] backdrop-blur-md border-white/10">
-        <h2 className="text-xl font-semibold mb-6">Project Tracking</h2>
-        <div className="space-y-6">
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              className="p-6 bg-[rgba(255,255,255,0.05)] rounded-lg border border-white/10"
-            >
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-3">
-                    <h3 className="font-semibold text-lg">{project.title}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs ${getPriorityColor(project.priority)}`}>
-                      {project.priority} priority
-                    </span>
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Projects</h1>
+          <p className="text-gray-400">
+            {isAdmin ? 'Manage projects, budgets, and track progress across your organization' : 'View your assigned projects and track progress'}
+          </p>
+        </div>
+        {isAdmin && (
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-[#FF5552] to-[#F62623] hover:from-[#FF6B68] hover:to-[#F73734]">
+                <Plus size={20} className="mr-2" />
+                Create Project
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-[#1A1A1A] border-white/10 text-white max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Create New Project</DialogTitle>
+                <DialogDescription>
+                  Create a new project with budget and timeline tracking
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="title">Project Title *</Label>
+                    <Input
+                      id="title"
+                      value={createForm.title}
+                      onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                      placeholder="Enter project title"
+                      className="bg-white/5 border-white/10 text-white"
+                    />
                   </div>
-                  <p className="text-gray-400">{project.description}</p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-400">
-                    <div className="flex items-center space-x-1">
-                      <Calendar size={16} />
-                      <span>Due: {project.dueDate}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <DollarSign size={16} />
-                      <span>${project.budget.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Users size={16} />
-                      <span>{project.assignedTo.join(', ')}</span>
-                    </div>
+                  <div>
+                    <Label htmlFor="client">Client *</Label>
+                    <Input
+                      id="client"
+                      value={createForm.client}
+                      onChange={(e) => setCreateForm({ ...createForm, client: e.target.value })}
+                      placeholder="Enter client name"
+                      className="bg-white/5 border-white/10 text-white"
+                    />
                   </div>
                 </div>
-                {hasProjectManagementAccess(mockUserRole) && (
-                  <button
-                    onClick={() => handleDeleteProject(project.id)}
-                    className="text-red-500 hover:text-red-400"
-                  >
-                    ×
-                  </button>
-                )}
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={createForm.description}
+                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                    placeholder="Enter project description"
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="budget">Budget (USD) *</Label>
+                    <Input
+                      id="budget"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={createForm.budget}
+                      onChange={(e) => setCreateForm({ ...createForm, budget: e.target.value })}
+                      placeholder="0.00"
+                      className="bg-white/5 border-white/10 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label>Priority</Label>
+                    <Select
+                      value={createForm.priority}
+                      onValueChange={(value: PriorityType) => setCreateForm({ ...createForm, priority: value })}
+                    >
+                      <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1A1A1A] border-white/10">
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label>Due Date *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal bg-white/5 border-white/10 text-white hover:bg-white/10"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {createForm.due_date ? format(createForm.due_date, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-[#1A1A1A] border-white/10" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={createForm.due_date}
+                        onSelect={(date) => setCreateForm({ ...createForm, due_date: date })}
+                        initialFocus
+                        className="text-white"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCreateProject} className="bg-gradient-to-r from-[#FF5552] to-[#F62623]">
+                    Create Project
+                  </Button>
+                </div>
               </div>
-              <div className="mt-4 flex items-center justify-between">
-                <Select
-                  value={project.status}
-                  onValueChange={(value: Project['status']) => handleUpdateStatus(project.id, value)}
-                >
-                  <SelectTrigger className="w-[200px] bg-[rgba(255,255,255,0.05)] border-white/10 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(project.status)}`}>
-                  {project.status}
-                </span>
-              </div>
-              <div className="mt-4">
-                <Progress 
-                  value={project.status === 'Completed' ? 100 : project.status === 'In Progress' ? 50 : 0} 
-                  className="h-2"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  );
-};
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
 
-export default Projects;
+      {/* Project Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-white/5 border-white/10 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-400">Total Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <Briefcase className="h-5 w-5 text-blue-400" />
+              <span className="text-2xl font-bold">{projectStats.total}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white/5 border-white/10 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-400">Active Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5 text-orange-400" />
+              <span className="text-2xl font-bold">{projectStats.inProgress}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white/5 border-white/10 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-400">Total Budget</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-5 w-5 text-green-400" />
+              <span className="text-2xl font-bold">{formatCurrency(projectStats.totalBudget)}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white/5 border-white/10 text-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-400">Total Spent</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-5 w-5 text-red-400" />
+              <span className="text-2xl font-bold">{formatCurrency(projectStats.totalSpent)}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters and Search */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Input
+            placeholder="Search projects..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-white/5 border-white/10 text-white placeholder-gray-400"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={(value: 'all' | StatusType) => setStatusFilter(value)}>
+            <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white">
+              <Filter size={16} className="mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1A1A1A] border-white/10">
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="Completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={priorityFilter} onValueChange={(value: 'all' | PriorityType) => setPriorityFilter(value)}>
+            <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white">
+              <Filter size={16} className="mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1A1A1A] border-white/10">
+              <SelectItem value="all">All Priority</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Project Table */}
+      <ProjectTable
+        projects={filteredProjects}
+        onStatusChange={handleStatusChange}
+        onDelete={isAdmin ? handleDeleteProject : undefined}
+        isAdmin={isAdmin}
+        loading={loading}
+      />
+    </div>
+  )
+}
+
+export default Projects
