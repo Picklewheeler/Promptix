@@ -13,6 +13,8 @@ import EmployeePortalLayout from "./components/layouts/EmployeePortalLayout";
 import Dashboard from "./pages/employee/Dashboard";
 import Budget from "./pages/employee/Budget";
 import Tasks from "./pages/employee/Tasks";
+import Projects from "./pages/employee/Projects";
+import Users from "./pages/employee/Users";
 
 const queryClient = new QueryClient();
 
@@ -33,12 +35,13 @@ const App = () => (
           <Route path="/employee" element={<EmployeePortalLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="tasks" element={<Tasks />} />
-            <Route path="income-projects" element={<Dashboard />} /> {/* TODO: Create Income/Projects component */}
+            <Route path="income-projects" element={<Projects />} />
             <Route path="requests" element={<Dashboard />} /> {/* TODO: Create Requests component */}
             <Route path="departments" element={<Dashboard />} /> {/* TODO: Create Departments component */}
             <Route path="budget" element={<Budget />} />
             <Route path="about" element={<AboutUs />} />
             <Route path="settings" element={<Dashboard />} /> {/* TODO: Create Settings component */}
+          <Route path="users" element={<Users />} />
           </Route>
           
           <Route path="*" element={<NotFound />} />

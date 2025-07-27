@@ -18,6 +18,7 @@ const navItems = [
   { icon: SendHorizontal, label: 'Requests', path: '/employee/requests' },
   { icon: Users, label: 'Departments', path: '/employee/departments' },
   { icon: PiggyBank, label: 'Budget', path: '/employee/budget' },
+  { icon: Users, label: 'Employees', path: '/employee/users', adminOnly: true },
   { icon: Info, label: 'About', path: '/employee/about' },
   { icon: Settings, label: 'Settings', path: '/employee/settings' },
 ];
