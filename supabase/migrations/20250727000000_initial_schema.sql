@@ -1,3 +1,6 @@
+-- Enable UUID extension
+create extension if not exists "uuid-ossp";
+
 -- Create users table
 create type user_role as enum ('executive', 'systems_admin', 'it_manager', 'sales', '3d_modeler', 'employee');
 create type department_name as enum ('Executive', 'IT/Infrastructure', 'Sales', 'Design & Development');
@@ -76,14 +79,14 @@ create table public.project_members (
 );
 
 -- Create budget_transactions table to track budget changes
-create type transaction_type as enum ('allocation', 'expense', 'adjustment');
+create type transaction_type_enum as enum ('allocation', 'expense', 'adjustment');
 
 create table public.budget_transactions (
     id uuid default uuid_generate_v4() primary key,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     department_id uuid references public.departments(id),
     amount numeric(12,2) not null,
-    transaction_type transaction_type not null,
+    transaction_type transaction_type_enum not null,
     description text,
     created_by uuid references public.users(id),
     project_id uuid references public.projects(id),
@@ -100,10 +103,10 @@ create policy "Users can view other users"
     using (true);
 
 create policy "Only admins can insert users"
-    on public.users for insert
-    with check (auth.jwt() ->> 'role' in ('executive', 'systems_admin', 'it_manager'));
-
 create policy "Only admins can update users"
+    on public.users for update
+    using (auth.jwt() ->> 'role' in ('executive', 'systems_admin', 'it_manager'))
+    with check (auth.jwt() ->> 'role' in ('executive', 'systems_admin', 'it_manager'));
     on public.users for update
     using (auth.jwt() ->> 'role' in ('executive', 'systems_admin', 'it_manager'));
 
@@ -154,7 +157,8 @@ create policy "Users can view departments"
 
 create policy "Only executives can manage departments"
     on public.departments for all
-    using (auth.jwt() ->> 'role' = 'executive');
+    using (auth.jwt() ->> 'role' = 'executive')
+    with check (auth.jwt() ->> 'role' = 'executive');
 
 -- Budget transactions policies
 alter table public.budget_transactions enable row level security;

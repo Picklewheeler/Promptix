@@ -23,8 +23,17 @@ const navItems = [
   { icon: Settings, label: 'Settings', path: '/employee/settings' },
 ];
 
+// Mock useAuth hook - In a real app, this would come from your authentication context
+const useAuth = () => {
+  // Replace this with actual logic to determine if the user is an admin
+  // For example, checking user roles from a global state or context
+  const isAdmin = true; // Set to true for testing admin view, false for regular user
+  return { isAdmin };
+};
+
 const EmployeePortalLayout: React.FC = () => {
   const location = useLocation();
+  const { isAdmin } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white flex">
@@ -42,6 +51,10 @@ const EmployeePortalLayout: React.FC = () => {
         </div>
         <nav className="p-4 space-y-2">
           {navItems.map((item) => {
+            // Conditionally render admin-only items
+            if (item.adminOnly && !isAdmin) {
+              return null;
+            }
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
