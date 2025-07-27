@@ -134,25 +134,6 @@ const Tasks = () => {
       return
     }
 
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert({
-          title: createForm.title,
-          description: createForm.description,
-          due_date: format(createForm.due_date, 'yyyy-MM-dd'),
-          priority: createForm.priority,
-          assigned_to: createForm.assigned_to,
-  const handleCreateTask = async () => {
-    if (!createForm.title || !createForm.due_date || !createForm.assigned_to) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive'
-      })
-      return
-    }
-
     if (!profile?.id) {
       toast({
         title: 'Error',
@@ -163,7 +144,15 @@ const Tasks = () => {
     }
 
     try {
-      // existing task creation logic…          status: 'Pending'
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({
+          title: createForm.title,
+          description: createForm.description,
+          due_date: format(createForm.due_date, 'yyyy-MM-dd'),
+          priority: createForm.priority,
+          assigned_to: createForm.assigned_to,
+          status: 'Pending'
         })
         .select()
 
