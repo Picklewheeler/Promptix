@@ -5,18 +5,20 @@ import { Footer } from '@/components/Footer';
 
 const Pricing: React.FC = () => {
   return (
-    <div className="relative flex flex-col overflow-hidden bg-[#0D0D0D] min-h-screen w-full">
-      <img
-        src="https://cdn.builder.io/api/v1/image/assets/9de6021644f9415b8e6ba1d1ef4607ce/d527bd6bc2f45786143bfd81a1bf4f624e00cbfb?placeholderIfAbsent=true"
-        className="aspect-[1.07] object-contain w-full max-w-[1440px] absolute z-0 h-auto right-0 top-0 max-md:max-w-full"
-        alt="Background"
-      />
+    <>
       <Header />
-      <main className="relative z-10">
-        <PricingSection />
-      </main>
-      <Footer />
-    </div>
+      <div className="relative flex flex-col overflow-hidden bg-[#0D0D0D] min-h-screen w-full">
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets/9de6021644f9415b8e6ba1d1ef4607ce/d527bd6bc2f45786143bfd81a1bf4f624e00cbfb?placeholderIfAbsent=true"
+          className="aspect-[1.07] object-contain w-full max-w-[1440px] absolute z-0 h-auto right-0 top-0 max-md:max-w-full"
+          alt="Background"
+        />
+        <main className="relative z-10 header-spacing" id="main-content">
+          <PricingSection />
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 };
 
