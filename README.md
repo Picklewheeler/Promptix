@@ -123,6 +123,17 @@ The application uses Supabase authentication with:
 - Protected routes for the employee portal
 - Context-based auth state management
 
+### Demo Credentials
+
+The system comes with pre-configured demo accounts for testing:
+
+- **CEO**: austin.rich@promptix.com | Password: Promptix123
+- **IT Admin**: dylan.wheeler@promptix.com | Password: Promptix123  
+- **Sales**: tobias.ives@promptix.com | Password: Promptix123
+- **Designer**: izak.grab@promptix.com | Password: Promptix123
+
+Access the employee portal at `/employee/login` and use any of these credentials to explore different user roles and permissions.
+
 ## 🎨 Styling
 
 - **Tailwind CSS** for utility-first styling

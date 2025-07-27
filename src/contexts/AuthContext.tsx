@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchUserProfile(session.user.id)
+        fetchUserProfile(session.user.email!)
       } else {
         setLoading(false)
       }
@@ -58,11 +58,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email)
         setSession(session)
         setUser(session?.user ?? null)
         
         if (session?.user) {
-          await fetchUserProfile(session.user.id)
+          await fetchUserProfile(session.user.email!)
         } else {
           setProfile(null)
           setLoading(false)
@@ -73,29 +74,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (email: string) => {
     try {
+      console.log('Fetching profile for email:', email)
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userId)
+        .eq('email', email)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching user profile:', error)
+        throw error
+      }
+      
+      console.log('Profile fetched:', data)
       setProfile(data)
     } catch (error) {
       console.error('Error fetching user profile:', error)
+      // If profile not found, sign out the user
+      await supabase.auth.signOut()
     } finally {
       setLoading(false)
     }
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { error }
+    try {
+      setLoading(true)
+      
+      // First, try to find user in our custom users table to validate credentials
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('email, password_hash')
+        .eq('email', email)
+        .single()
+
+      if (userError || !userData) {
+        return { error: { message: 'Invalid email or password' } as AuthError }
+      }
+
+      // Simple password check (in production, use proper password hashing)
+      if (userData.password_hash !== password) {
+        return { error: { message: 'Invalid email or password' } as AuthError }
+      }
+
+      // If credentials are valid, create a Supabase auth session
+      // For demo purposes, we'll use a dummy password for Supabase auth
+      // In production, you'd want to migrate to proper Supabase auth or use a different approach
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: 'demo-password-123' // Using a consistent dummy password for demo
+      })
+
+      if (signInError) {
+        // If the user doesn't exist in Supabase auth, create them
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: email,
+          password: 'demo-password-123'
+        })
+        
+        if (signUpError) {
+          console.error('Sign up error:', signUpError)
+          return { error: signUpError }
+        }
+      }
+
+      return { error: null }
+    } catch (error) {
+      console.error('Sign in error:', error)
+      return { error: error as AuthError }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const signOut = async () => {
