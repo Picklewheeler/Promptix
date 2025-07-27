@@ -17,10 +17,10 @@ export const Header: React.FC = () => {
             <img
               src="https://cdn.builder.io/api/v1/image/assets/9de6021644f9415b8e6ba1d1ef4607ce/e4bfb5a3f9037dab7d49b7c2771e5de52593d8aa?placeholderIfAbsent=true"
               className="aspect-[1] object-contain w-10 shrink-0"
-              alt="FlowApp Logo"
+              alt="Promptix Logo"
             />
             <div className="text-white">
-              FlowApp
+              Promptix
             </div>
           </div>
 
