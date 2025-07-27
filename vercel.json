@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
-  "installCommand": "npm install --legacy-peer-deps --no-optional",
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
   "framework": "vite"
 } 
