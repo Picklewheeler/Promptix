@@ -12,6 +12,7 @@ import EmployeeLogin from "./pages/employee/EmployeeLogin";
 import EmployeePortalLayout from "./components/layouts/EmployeePortalLayout";
 import Dashboard from "./pages/employee/Dashboard";
 import Budget from "./pages/employee/Budget";
+import Tasks from "./pages/employee/Tasks";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +32,7 @@ const App = () => (
           <Route path="/employee/login" element={<EmployeeLogin />} />
           <Route path="/employee" element={<EmployeePortalLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="tasks" element={<Dashboard />} /> {/* TODO: Create Tasks component */}
+            <Route path="tasks" element={<Tasks />} />
             <Route path="income-projects" element={<Dashboard />} /> {/* TODO: Create Income/Projects component */}
             <Route path="requests" element={<Dashboard />} /> {/* TODO: Create Requests component */}
             <Route path="departments" element={<Dashboard />} /> {/* TODO: Create Departments component */}
