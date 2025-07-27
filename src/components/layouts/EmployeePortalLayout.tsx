@@ -1,11 +1,6 @@
-<<<<<<< HEAD
-import React from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
-=======
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
->>>>>>> 671489e6df26e438c3876e2537dc9cfe9bede4c9
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -42,13 +37,9 @@ const navItems = [
 ];
 
 const EmployeePortalLayout: React.FC = () => {
-<<<<<<< HEAD
-  const { isAdmin } = useAuth();
-=======
   const location = useLocation();
   const { profile, isAdmin, signOut, loading, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
->>>>>>> 671489e6df26e438c3876e2537dc9cfe9bede4c9
 
   // Redirect to login if not authenticated
   if (!loading && !user) {
@@ -110,30 +101,6 @@ const EmployeePortalLayout: React.FC = () => {
             </Button>
           </div>
         </div>
-<<<<<<< HEAD
-        <nav className="p-4 space-y-2">
-          {navItems
-            .filter((item) => !item.adminOnly || isAdmin)
-            .map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-gradient-to-r from-[#FF5552] to-[#F62623] text-white'
-                        : 'hover:bg-white/10 text-gray-300'
-                    }`
-                  }
-                >
-                  <Icon size={20} />
-                  <span>{item.label}</span>
-                </NavLink>
-              );
-            })}
-=======
 
         {/* User Profile Section */}
         <div className="p-4 border-b border-white/10">
@@ -204,7 +171,6 @@ const EmployeePortalLayout: React.FC = () => {
               </Link>
             );
           })}
->>>>>>> 671489e6df26e438c3876e2537dc9cfe9bede4c9
         </nav>
       </aside>
 
